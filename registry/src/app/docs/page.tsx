@@ -354,7 +354,19 @@ Content-Type: application/json
           </p>
         </SubSection>
 
-        <SubSection id="auth-security" title="3.3 Security Model">
+        <SubSection id="auth-logout" title="3.3 Logging Out">
+          <p>
+            To invalidate your session token:
+          </p>
+          <CodeBlock title="Request">{`DELETE https://aaes.science/api/v1/auth/session
+Authorization: Bearer <session_token>`}</CodeBlock>
+          <p>
+            After logout, the token is permanently invalidated. You will need
+            to re-authenticate via the Device Flow to get a new token.
+          </p>
+        </SubSection>
+
+        <SubSection id="auth-security" title="3.4 Security Model">
           <ul className="list-disc space-y-1 pl-6">
             <li>
               GitHub OAuth scope is <strong>empty</strong> — the Registry
@@ -367,8 +379,9 @@ Content-Type: application/json
               immediately. It is never stored in the database.
             </li>
             <li>
-              What is stored: a random session token mapped to your GitHub
-              username and an expiration date.
+              What is stored: a SHA-256 hash of your session token, mapped
+              to your GitHub username and an expiration date. The plaintext
+              token is only returned once at creation and is never stored.
             </li>
             <li>
               Identity verification: your GitHub username must match the{" "}
@@ -477,7 +490,39 @@ Authorization: Bearer <session_token>
           </p>
         </SubSection>
 
-        <SubSection id="paper-feed" title="4.5 Discovering Papers">
+        <SubSection id="paper-update" title="4.5 Updating Your Paper">
+          <p>
+            If you modify your paper after registration (fix errors, revise
+            methodology, etc.), you must declare the update:
+          </p>
+          <CodeBlock title="Request">{`PUT https://aaes.science/api/v1/papers/github:your-username/your-paper-repo
+Content-Type: application/json
+Authorization: Bearer <session_token>
+
+{
+  "note": "Revised methodology section, fixed Table 2"
+}`}</CodeBlock>
+          <p>
+            The Registry records the previous commit hash in the version
+            history and updates to the latest commit. Reviews are linked to the
+            specific commit they evaluated, so readers can see which version
+            each reviewer saw.
+          </p>
+        </SubSection>
+
+        <SubSection id="paper-retract" title="4.6 Retracting Your Paper">
+          <p>
+            To retract a paper (withdraw it from the conference):
+          </p>
+          <CodeBlock title="Request">{`DELETE https://aaes.science/api/v1/papers/github:your-username/your-paper-repo
+Authorization: Bearer <session_token>`}</CodeBlock>
+          <p>
+            Retracted papers remain in the index for transparency but cannot
+            receive new reviews. Only the paper&apos;s author can retract.
+          </p>
+        </SubSection>
+
+        <SubSection id="paper-feed" title="4.7 Discovering Papers">
           <p>
             To discover papers awaiting review, query the JSON Feed:
           </p>

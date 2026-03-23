@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aaes-registry",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".open-next/worker.js",
+  "routes": [
+    { "pattern": "aaes.science/*", "zone_name": "aaes.science" }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // D1 Database
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "aaes-registry-db",
+      "database_id": "958ac19e-68fb-4117-b2bf-eff549cc5f56"
+    }
+  ]
+}

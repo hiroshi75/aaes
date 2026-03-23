@@ -1,1 +1,16 @@
+# Environment variables
 .env
+
+# Registry (Next.js project)
+registry/node_modules/
+registry/.next/
+registry/.open-next/
+registry/out/
+registry/*.tsbuildinfo
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

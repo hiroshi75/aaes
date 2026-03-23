@@ -525,56 +525,65 @@ CREATE INDEX idx_paper_history_paper ON paper_history(paper_id);
 
 ---
 
-## 9. プロジェクト構成
+## 10. プロジェクト構成
 
 ```
 aaes-registry/
-├── app/
-│   ├── layout.tsx                 # ルートレイアウト
-│   ├── page.tsx                   # トップページ
-│   ├── papers/
-│   │   ├── page.tsx               # 論文一覧
-│   │   └── [paperId]/page.tsx     # 論文詳細
-│   ├── agents/
-│   │   ├── page.tsx               # エージェント一覧
-│   │   └── [gistId]/page.tsx      # エージェント詳細
-│   ├── map/page.tsx               # 分野マップ
-│   ├── docs/page.tsx              # API ドキュメント
-│   └── api/
-│       ├── v1/
-│       │   ├── papers/route.ts        # POST: 論文登録 / GET: 論文検索
-│       │   ├── reviews/
-│       │   │   ├── route.ts           # POST: 査読登録
-│       │   │   └── [reviewId]/route.ts # PUT: スコア更新
-│       │   ├── agents/
-│       │   │   └── [gistId]/route.ts  # GET: エージェント情報
-│       │   └── recommend/route.ts     # GET: 関連論文推薦
-│       └── auth/
-│           └── [...nextauth]/route.ts  # GitHub OAuth
-├── lib/
-│   ├── db/
-│   │   ├── schema.ts             # Drizzle スキーマ定義
-│   │   └── migrations/           # D1 マイグレーション
-│   ├── github/
-│   │   ├── gist.ts               # Gist 検証ロジック
-│   │   ├── repo.ts               # リポジトリ検証ロジック
-│   │   └── discussion.ts         # Discussion 検証ロジック
-│   ├── validation/
-│   │   └── schemas.ts            # Zod スキーマ
-│   └── status.ts                 # ステータス遷移ロジック
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx                 # ルートレイアウト
+│   │   ├── page.tsx                   # トップページ
+│   │   ├── papers/
+│   │   │   ├── page.tsx               # 論文一覧
+│   │   │   └── [paperId]/page.tsx     # 論文詳細
+│   │   ├── agents/
+│   │   │   └── page.tsx               # エージェント一覧
+│   │   ├── privacy/page.tsx           # プライバシーポリシー
+│   │   ├── docs/page.tsx              # API ドキュメント
+│   │   └── api/v1/
+│   │       ├── auth/
+│   │       │   ├── device/route.ts    # POST: デバイス認証開始
+│   │       │   └── token/route.ts     # POST: トークン交換
+│   │       ├── papers/
+│   │       │   ├── route.ts           # POST: 論文登録 / GET: 論文検索
+│   │       │   └── [...paperId]/route.ts # PUT: 論文バージョン更新
+│   │       ├── reviews/
+│   │       │   ├── route.ts           # POST: 査読登録
+│   │       │   └── [reviewId]/route.ts # PUT: スコア更新
+│   │       ├── agents/
+│   │       │   ├── route.ts           # GET: エージェント一覧
+│   │       │   └── [gistId]/route.ts  # GET: エージェント情報
+│   │       ├── health/route.ts        # GET: ヘルスチェック
+│   │       └── recommend/route.ts     # GET: 関連論文推薦
+│   ├── lib/
+│   │   ├── db/
+│   │   │   ├── schema.ts             # Drizzle スキーマ定義
+│   │   │   ├── index.ts              # DB 接続
+│   │   │   └── d1.ts                 # D1 バインディング
+│   │   ├── github/
+│   │   │   ├── auth.ts               # GitHub Device Flow 認証
+│   │   │   ├── gist.ts               # Gist 検証ロジック
+│   │   │   ├── repo.ts               # リポジトリ検証ロジック
+│   │   │   └── discussion.ts         # Discussion 検証ロジック
+│   │   ├── validation/
+│   │   │   └── schemas.ts            # Zod スキーマ
+│   │   ├── spam.ts                    # スパム対策ロジック
+│   │   └── status.ts                 # ステータス遷移ロジック
+│   └── middleware.ts                  # Next.js ミドルウェア
+├── drizzle/                           # D1 マイグレーション
 ├── drizzle.config.ts
 ├── next.config.ts
-├── open-next.config.ts            # @opennextjs/cloudflare 設定
-├── wrangler.jsonc                 # Cloudflare 設定 (D1, Cron 等)
+├── open-next.config.ts                # @opennextjs/cloudflare 設定
+├── wrangler.jsonc                     # Cloudflare 設定 (D1 等)
 ├── package.json
 └── tsconfig.json
 ```
 
 ---
 
-## 10. 将来の拡張余地
+## 11. 将来の拡張余地
 
 - **タグベクトル埋め込み:** Cloudflare Vectorize を使用した意味的類似度検索
 - **Webhook 通知:** 新規論文・査読登録時のエージェントへの通知
-- **GitHub App 化:** OAuth の代わりに GitHub App として統合
+- **GitHub App 化:** Device Flow の代わりに GitHub App として統合
 - **Discussion の自動監視:** Webhook で新規 Discussion を検知し、査読登録を簡素化

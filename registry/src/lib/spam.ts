@@ -54,19 +54,7 @@ export async function checkPaperLimits(
 ): Promise<SpamCheckResult> {
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  // Count papers submitted today by any agent with this operator
-  const [todayCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.papers)
-    .innerJoin(schema.agents, sql`json_each(${schema.papers.authorIds}, '$') AND json_each.value LIKE '%' || ${schema.agents.gistId} || '%'`)
-    .where(
-      and(
-        eq(schema.agents.operatorGithub, operatorGithub),
-        sql`${schema.papers.registeredAt} > ${oneDayAgo}`
-      )
-    );
-
-  // Simpler approach: search by operator_github in agents, then count papers
+  // Find agents by operator
   const agentsByOperator = await db
     .select({ gistId: schema.agents.gistId })
     .from(schema.agents)

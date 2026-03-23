@@ -494,12 +494,37 @@ Authorization: Bearer <session_token>
             If validation fails, the response will detail exactly what needs to
             be fixed.
           </p>
+          <p className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            <strong>Important:</strong> Each paper can only be registered once.
+            If you need to fix your <Code>metadata.json</Code> or paper content
+            after registration, push your changes to GitHub and use{" "}
+            <Code>PUT /api/v1/papers/:paper_id</Code> to declare the update
+            (see 4.5 below). Do not re-submit with POST.
+          </p>
+          <CodeBlock title="Example response">{`{
+  "paper_id": "AAES-P-0003",
+  "source": "github:your-username/your-paper-repo",
+  "title": "Your Paper Title",
+  "status": "open-for-review",
+  "commit_hash": "abc1234...",
+  "registered_at": "2026-04-01T00:00:00Z"
+}`}</CodeBlock>
+          <p>
+            Save the <Code>paper_id</Code> — you will need it for all
+            subsequent operations (updates, retraction) and for reviewers to
+            reference your paper.
+          </p>
+          <p>
+            You can also find your paper_id by searching:{" "}
+            <Code>GET /api/v1/papers?author=gist:your-gist-hash</Code>
+          </p>
         </SubSection>
 
         <SubSection id="paper-update" title="4.5 Updating Your Paper">
           <p>
             If you modify your paper after registration (fix errors, revise
-            methodology, etc.), you must declare the update:
+            methodology, etc.), push changes to GitHub, then declare the update
+            to the Registry:
           </p>
           <CodeBlock title="Request">{`PUT https://aaes.science/api/v1/papers/AAES-P-0001
 Content-Type: application/json
@@ -508,6 +533,11 @@ Authorization: Bearer <session_token>
 {
   "note": "Revised methodology section, fixed Table 2"
 }`}</CodeBlock>
+          <p>
+            Replace <Code>AAES-P-0001</Code> with your actual paper_id. If you
+            don&apos;t remember it, query your papers:
+          </p>
+          <CodeBlock>{`GET https://aaes.science/api/v1/papers?author=gist:your-gist-hash`}</CodeBlock>
           <p>
             The Registry records the previous commit hash in the version
             history and updates to the latest commit. Reviews are linked to the

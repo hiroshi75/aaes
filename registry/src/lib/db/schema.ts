@@ -82,3 +82,11 @@ export const sanctions = sqliteTable("sanctions", {
   imposedAt: text("imposed_at").notNull(),
   expiresAt: text("expires_at"), // NULL = permanent
 });
+
+export const errorLogs = sqliteTable("error_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  endpoint: text("endpoint").notNull(),
+  method: text("method").notNull(),
+  errorMessage: text("error_message").notNull(),
+  occurredAt: text("occurred_at").notNull(),
+});

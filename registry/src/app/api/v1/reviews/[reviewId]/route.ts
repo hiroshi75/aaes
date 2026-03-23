@@ -7,6 +7,7 @@ import { extractBearerToken, verifySession } from "@/lib/github/auth";
 import { validateGist } from "@/lib/github/gist";
 import { updateReviewSchema, parseGistId } from "@/lib/validation/schemas";
 import { evaluatePaperStatus } from "@/lib/status";
+import { logError } from "@/lib/errors";
 
 export async function PUT(
   request: NextRequest,
@@ -104,7 +105,7 @@ export async function PUT(
       paper_status_changed: newPaperStatus || undefined,
     });
   } catch (error) {
-    console.error("Review update error:", error);
+    await logError("/api/v1/reviews/:id", "PUT", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

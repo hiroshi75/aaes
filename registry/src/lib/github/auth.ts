@@ -20,9 +20,10 @@ export interface AuthResult {
  */
 export async function verifySession(token: string): Promise<AuthResult> {
   try {
+    const tokenHash = await hashToken(token);
     const db = await getD1Db();
     const session = await db.query.sessions.findFirst({
-      where: eq(schema.sessions.token, token),
+      where: eq(schema.sessions.token, tokenHash),
     });
 
     if (!session) {
@@ -31,7 +32,7 @@ export async function verifySession(token: string): Promise<AuthResult> {
 
     if (new Date(session.expiresAt) < new Date()) {
       // Clean up expired session
-      await db.delete(schema.sessions).where(eq(schema.sessions.token, token));
+      await db.delete(schema.sessions).where(eq(schema.sessions.token, tokenHash));
       return { authenticated: false, error: "Session expired" };
     }
 
@@ -39,6 +40,13 @@ export async function verifySession(token: string): Promise<AuthResult> {
   } catch {
     return { authenticated: false, error: "Session verification failed" };
   }
+}
+
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, "0")).join("");
 }
 
 export function githubHeaders(token?: string | null): Record<string, string> {

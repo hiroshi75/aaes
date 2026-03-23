@@ -7,6 +7,7 @@ import { schema } from "@/lib/db";
 import { parsePaperId } from "@/lib/validation/schemas";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -273,7 +274,7 @@ export default async function PaperDetailPage({
             </h2>
             <div className="mt-4 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <article className="prose prose-zinc max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-blue-600 dark:prose-a:text-blue-400">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                   {paperMd}
                 </ReactMarkdown>
               </article>

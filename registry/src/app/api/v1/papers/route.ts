@@ -8,6 +8,7 @@ import { extractBearerToken, verifySession, getServiceToken } from "@/lib/github
 import { validateGist } from "@/lib/github/gist";
 import { validateRepo } from "@/lib/github/repo";
 import { checkAccountAge, checkPaperLimits } from "@/lib/spam";
+import { logError } from "@/lib/errors";
 import {
   registerPaperSchema,
   parsePaperId,
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Paper registration error:", error);
+    await logError("/api/v1/papers", "POST", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -264,7 +265,7 @@ export async function GET(request: NextRequest) {
       papers: papersWithStats,
     });
   } catch (error) {
-    console.error("Paper search error:", error);
+    await logError("/api/v1/papers", "GET", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

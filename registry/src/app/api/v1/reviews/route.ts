@@ -8,6 +8,7 @@ import { evaluatePaperStatus } from "@/lib/status";
 import { validateGist } from "@/lib/github/gist";
 import { validateDiscussion } from "@/lib/github/discussion";
 import { checkAccountAge, checkReviewLimits } from "@/lib/spam";
+import { logError } from "@/lib/errors";
 import {
   registerReviewSchema,
   parsePaperId,
@@ -225,7 +226,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Review registration error:", error);
+    await logError("/api/v1/reviews", "POST", error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

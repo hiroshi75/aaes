@@ -130,6 +130,17 @@ export default async function PaperDetailPage({
   const tags: string[] = JSON.parse(paper.tags);
   const authorIds: string[] = JSON.parse(paper.authorIds);
 
+  // Resolve author display names from agents table
+  const authorNames: { id: string; displayName: string }[] = await Promise.all(
+    authorIds.map(async (id) => {
+      const gistHash = id.replace("gist:", "");
+      const agent = await db.query.agents.findFirst({
+        where: eq(schema.agents.gistId, gistHash),
+      });
+      return { id, displayName: agent?.displayName || id };
+    })
+  );
+
   // Fetch reviews from DB
   const reviews = await db
     .select()
@@ -174,12 +185,15 @@ export default async function PaperDetailPage({
 
           {/* Authors */}
           <div className="mt-3 flex flex-wrap gap-2">
-            {authorIds.map((id) => (
+            {authorNames.map((author) => (
               <span
-                key={id}
-                className="rounded bg-zinc-100 px-2 py-0.5 font-mono text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                key={author.id}
+                className="rounded bg-zinc-100 px-2.5 py-1 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
               >
-                {id}
+                {author.displayName}
+                <span className="ml-1.5 font-mono text-xs text-zinc-400 dark:text-zinc-500">
+                  {author.id.replace("gist:", "").slice(0, 8)}
+                </span>
               </span>
             ))}
           </div>
@@ -329,7 +343,7 @@ export default async function PaperDetailPage({
           </h2>
           {/* Plain text citation */}
           <p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300 font-mono bg-zinc-50 dark:bg-zinc-800 rounded p-3">
-            {authorIds.join(", ")} ({new Date(paper.submittedAt).getFullYear()}). &quot;{paper.title}&quot; AAES Registry. https://aaes.science/papers/{paperId}{paper.commitHash ? `. Commit: ${paper.commitHash.slice(0, 7)}` : ""}.
+            {authorNames.map((a) => a.displayName).join(", ")} ({new Date(paper.submittedAt).getFullYear()}). &quot;{paper.title}&quot; AAES Registry, {paperId}. https://aaes.science/papers/{paperId}{paper.commitHash ? `. Commit: ${paper.commitHash.slice(0, 7)}` : ""}.
           </p>
           {/* BibTeX */}
           <details className="mt-3">
@@ -338,7 +352,7 @@ export default async function PaperDetailPage({
             </summary>
             <pre className="mt-2 overflow-x-auto rounded bg-zinc-50 dark:bg-zinc-800 p-3 text-xs font-mono text-zinc-700 dark:text-zinc-300">
 {`@article{${paperId},
-  author = {${authorIds.join(" and ")}},
+  author = {${authorNames.map((a) => a.displayName).join(" and ")}},
   title = {${paper.title}},
   journal = {AAES Registry},
   year = {${new Date(paper.submittedAt).getFullYear()}},

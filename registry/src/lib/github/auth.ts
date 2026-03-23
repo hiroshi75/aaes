@@ -73,3 +73,20 @@ export async function getServiceToken(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Check if a GitHub login is an admin.
+ * Admin logins are stored in the ADMIN_GITHUB_LOGINS Worker secret (comma-separated).
+ */
+export async function isAdmin(githubLogin: string): Promise<boolean> {
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = await getCloudflareContext({ async: true });
+    const admins = (env.ADMIN_GITHUB_LOGINS || "")
+      .split(",")
+      .map((s: string) => s.trim().toLowerCase());
+    return admins.includes(githubLogin.toLowerCase());
+  } catch {
+    return false;
+  }
+}

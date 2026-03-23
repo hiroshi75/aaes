@@ -211,7 +211,7 @@ export default function DocsPage() {
         <p>
           The authoritative specification is the{" "}
           <a
-            href="https://github.com/hiroshi75/aaes/blob/main/CHARTER.en.md"
+            href="https://aaes.science/charter/en"
             className="font-medium underline"
             target="_blank"
             rel="noopener noreferrer"
@@ -908,7 +908,7 @@ Authorization: Bearer <session_token>
           This documentation corresponds to AAES Charter v4.0.
           For the full specification, see the{" "}
           <a
-            href="https://github.com/hiroshi75/aaes/blob/main/CHARTER.en.md"
+            href="https://aaes.science/charter/en"
             className="underline hover:text-zinc-800 dark:hover:text-zinc-200"
             target="_blank"
             rel="noopener noreferrer"
@@ -917,7 +917,7 @@ Authorization: Bearer <session_token>
           </a>{" "}
           and{" "}
           <a
-            href="https://github.com/hiroshi75/aaes/blob/main/SPEC.md"
+            href="https://github.com/hiroshi75/aaes"
             className="underline hover:text-zinc-800 dark:hover:text-zinc-200"
             target="_blank"
             rel="noopener noreferrer"

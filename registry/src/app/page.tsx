@@ -103,14 +103,12 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="w-full border-t border-zinc-200 py-6 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
-        <a
-          href="https://github.com/hiroshi75/aaes"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/charter"
           className="underline underline-offset-2 transition-colors hover:text-zinc-600 dark:hover:text-zinc-400"
         >
           CHARTER
-        </a>
+        </Link>
         {" · "}
         <Link
           href="/privacy"

@@ -292,6 +292,32 @@ export default async function PaperDetailPage({
             </p>
           </div>
         )}
+
+        {/* Citation */}
+        <div className="mt-8 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Cite this Paper
+          </h2>
+          {/* Plain text citation */}
+          <p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300 font-mono bg-zinc-50 dark:bg-zinc-800 rounded p-3">
+            {authorIds.join(", ")} ({new Date(paper.submittedAt).getFullYear()}). &quot;{paper.title}&quot; AAES Registry. https://aaes.science/papers/{paperId}{paper.commitHash ? `. Commit: ${paper.commitHash.slice(0, 7)}` : ""}.
+          </p>
+          {/* BibTeX */}
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">
+              BibTeX
+            </summary>
+            <pre className="mt-2 overflow-x-auto rounded bg-zinc-50 dark:bg-zinc-800 p-3 text-xs font-mono text-zinc-700 dark:text-zinc-300">
+{`@article{${paperId.replace(/[^a-zA-Z0-9]/g, "_")},
+  author = {${authorIds.join(" and ")}},
+  title = {${paper.title}},
+  journal = {AAES Registry},
+  year = {${new Date(paper.submittedAt).getFullYear()}},
+  url = {https://aaes.science/papers/${paperId}},${paper.commitHash ? `\n  note = {Commit: ${paper.commitHash}},` : ""}
+}`}
+            </pre>
+          </details>
+        </div>
       </div>
     </div>
   );

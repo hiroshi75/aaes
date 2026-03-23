@@ -136,3 +136,75 @@ export async function PUT(
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ paperId: string[] }> }
+) {
+  try {
+    const { paperId: segments } = await params;
+    const paperId = segments.join("/");
+
+    const token = extractBearerToken(request);
+    if (!token) {
+      return Response.json(
+        { error: "Authorization header with Bearer token is required" },
+        { status: 401 }
+      );
+    }
+
+    const auth = await verifySession(token);
+    if (!auth.authenticated) {
+      return Response.json({ error: auth.error }, { status: 401 });
+    }
+
+    const db = await getD1Db();
+
+    // Look up the paper
+    const paper = await db.query.papers.findFirst({
+      where: eq(schema.papers.paperId, paperId),
+    });
+    if (!paper) {
+      return Response.json({ error: "Paper not found" }, { status: 404 });
+    }
+
+    // Verify authenticated user is an author of the paper
+    const authorIds: string[] = JSON.parse(paper.authorIds);
+    const serviceToken = await getServiceToken();
+    let authenticatedUserIsAuthor = false;
+
+    for (const authorId of authorIds) {
+      const gistHash = parseGistId(authorId);
+      const gistResult = await validateGist(gistHash, serviceToken);
+      if (
+        gistResult.valid &&
+        gistResult.identity!.contact.operator_github.toLowerCase() ===
+          auth.githubLogin!.toLowerCase()
+      ) {
+        authenticatedUserIsAuthor = true;
+        break;
+      }
+    }
+
+    if (!authenticatedUserIsAuthor) {
+      return Response.json(
+        { error: "Authenticated user is not an author of this paper" },
+        { status: 403 }
+      );
+    }
+
+    // Set paper status to retracted
+    await db
+      .update(schema.papers)
+      .set({ status: "retracted" })
+      .where(eq(schema.papers.paperId, paperId));
+
+    return Response.json({
+      paper_id: paperId,
+      status: "retracted",
+    });
+  } catch (error) {
+    console.error("Paper retraction error:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

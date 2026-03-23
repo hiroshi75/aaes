@@ -13,6 +13,7 @@ type AvgScores = {
 
 type Paper = {
   paper_id: string;
+  source: string;
   title: string;
   abstract: string;
   author_ids: string[];
@@ -229,7 +230,7 @@ export default function PapersPage() {
                         {paper.title}
                       </a>
                       <a
-                        href={paperIdToGithubUrl(paper.paper_id)}
+                        href={paperIdToGithubUrl(paper.source)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"

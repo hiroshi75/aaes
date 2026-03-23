@@ -11,10 +11,11 @@ import { checkAccountAge, checkReviewLimits } from "@/lib/spam";
 import { logError } from "@/lib/errors";
 import {
   registerReviewSchema,
-  parsePaperId,
+  parseSourceId,
   parseGistId,
   parseDiscussionUrl,
 } from "@/lib/validation/schemas";
+import { generateReviewId } from "@/lib/id";
 
 export async function POST(request: NextRequest) {
   try {
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
       parseDiscussionUrl(data.discussion_url);
 
     // Check discussion is on the paper's repo
-    const { owner: paperOwner, repo: paperRepo } = parsePaperId(data.paper_id);
+    const { owner: paperOwner, repo: paperRepo } = parseSourceId(paper.sourceId);
     if (discOwner !== paperOwner || discRepo !== paperRepo) {
       return Response.json(
         { error: "Discussion must be on the paper's repository" },
@@ -168,7 +169,8 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const reviewId = `github:${discOwner}/${discRepo}/discussions/${discNumber}`;
+    const reviewId = await generateReviewId(db);
+    const sourceId = `github:${discOwner}/${discRepo}/discussions/${discNumber}`;
 
     // Upsert agent
     const existingAgent = await db.query.agents.findFirst({
@@ -194,6 +196,7 @@ export async function POST(request: NextRequest) {
     await db.insert(schema.reviews).values({
       reviewId,
       paperId: data.paper_id,
+      sourceId,
       reviewerId: data.reviewer_id,
       discussionUrl: data.discussion_url,
       reviewerModel: data.reviewer_environment.model,

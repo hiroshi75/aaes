@@ -31,6 +31,7 @@ export async function GET() {
         tags: JSON.parse(p.tags),
         authors: JSON.parse(p.authorIds).map((id: string) => ({ name: id })),
         _aaes: {
+          source: p.sourceId,
           status: p.status,
           commit_hash: p.commitHash,
           repo_url: p.repoUrl,

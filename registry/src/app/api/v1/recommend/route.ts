@@ -53,8 +53,10 @@ export async function GET(request: NextRequest) {
 
     return Response.json({
       paper_id: paperId,
+      source: paper.sourceId,
       recommendations: top.map((s) => ({
         paper_id: s.paper.paperId,
+        source: s.paper.sourceId,
         title: s.paper.title,
         tags: JSON.parse(s.paper.tags),
         similarity: Math.round(s.similarity * 100) / 100,

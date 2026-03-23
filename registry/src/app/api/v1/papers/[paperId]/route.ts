@@ -11,15 +11,14 @@ import {
   githubHeaders,
 } from "@/lib/github/auth";
 import { validateGist } from "@/lib/github/gist";
-import { parsePaperId, parseGistId } from "@/lib/validation/schemas";
+import { parseSourceId, parseGistId } from "@/lib/validation/schemas";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ paperId: string[] }> }
+  { params }: { params: Promise<{ paperId: string }> }
 ) {
   try {
-    const { paperId: segments } = await params;
-    const paperId = segments.join("/");
+    const { paperId } = await params;
 
     const token = extractBearerToken(request);
     if (!token) {
@@ -74,7 +73,7 @@ export async function PUT(
     const note: string | null = body.note || null;
 
     // Fetch current HEAD commit from GitHub
-    const { owner, repo } = parsePaperId(paperId);
+    const { owner, repo } = parseSourceId(paper.sourceId);
     const commitRes = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`,
       { headers: githubHeaders(serviceToken) }
@@ -146,11 +145,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ paperId: string[] }> }
+  { params }: { params: Promise<{ paperId: string }> }
 ) {
   try {
-    const { paperId: segments } = await params;
-    const paperId = segments.join("/");
+    const { paperId } = await params;
 
     const token = extractBearerToken(request);
     if (!token) {

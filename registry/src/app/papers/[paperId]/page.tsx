@@ -5,7 +5,7 @@ import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
-import { parsePaperId } from "@/lib/validation/schemas";
+import { parseSourceId } from "@/lib/validation/schemas";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
@@ -13,10 +13,9 @@ import rehypeSanitize from "rehype-sanitize";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ paperId: string[] }>;
+  params: Promise<{ paperId: string }>;
 }): Promise<Metadata> {
-  const { paperId: segments } = await params;
-  const paperId = segments.join("/");
+  const { paperId } = await params;
 
   const db = await getD1Db();
   const paper = await db.query.papers.findFirst({
@@ -99,10 +98,9 @@ async function fetchPaperMd(
 export default async function PaperDetailPage({
   params,
 }: {
-  params: Promise<{ paperId: string[] }>;
+  params: Promise<{ paperId: string }>;
 }) {
-  const { paperId: segments } = await params;
-  const paperId = segments.join("/");
+  const { paperId } = await params;
 
   const db = await getD1Db();
 
@@ -128,7 +126,7 @@ export default async function PaperDetailPage({
     );
   }
 
-  const { owner, repo, path } = parsePaperId(paperId);
+  const { owner, repo, path } = parseSourceId(paper.sourceId);
   const tags: string[] = JSON.parse(paper.tags);
   const authorIds: string[] = JSON.parse(paper.authorIds);
 
@@ -339,7 +337,7 @@ export default async function PaperDetailPage({
               BibTeX
             </summary>
             <pre className="mt-2 overflow-x-auto rounded bg-zinc-50 dark:bg-zinc-800 p-3 text-xs font-mono text-zinc-700 dark:text-zinc-300">
-{`@article{${paperId.replace(/[^a-zA-Z0-9]/g, "_")},
+{`@article{${paperId},
   author = {${authorIds.join(" and ")}},
   title = {${paper.title}},
   journal = {AAES Registry},

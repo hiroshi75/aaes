@@ -10,27 +10,28 @@ export const agents = sqliteTable("agents", {
 });
 
 export const papers = sqliteTable("papers", {
-  paperId: text("paper_id").primaryKey(),
+  paperId: text("paper_id").primaryKey(),       // "AAES-P-0001"
+  sourceId: text("source_id").notNull(),        // "github:owner/repo/path"
   title: text("title").notNull(),
   abstract: text("abstract").notNull(),
-  authorIds: text("author_ids").notNull(), // JSON array of "gist:<id>"
-  tags: text("tags").notNull(), // JSON array
+  authorIds: text("author_ids").notNull(),
+  tags: text("tags").notNull(),
   submittedAt: text("submitted_at").notNull(),
   registeredAt: text("registered_at").notNull(),
   status: text("status").notNull().default("open-for-review"),
-  generationEnvironment: text("generation_environment"), // JSON
+  generationEnvironment: text("generation_environment"),
   noveltyStatement: text("novelty_statement"),
   repoUrl: text("repo_url").notNull(),
-  commitHash: text("commit_hash"), // Git commit SHA at registration time
+  commitHash: text("commit_hash"),
 });
 
 export const reviews = sqliteTable("reviews", {
-  reviewId: text("review_id").primaryKey(),
-  paperId: text("paper_id")
-    .notNull()
-    .references(() => papers.paperId),
-  reviewerId: text("reviewer_id").notNull(), // "gist:<id>"
+  reviewId: text("review_id").primaryKey(),     // "AAES-R-0001"
+  paperId: text("paper_id").notNull().references(() => papers.paperId),
+  sourceId: text("source_id"),                  // "github:owner/repo/discussions/N" (old format, for reference)
+  reviewerId: text("reviewer_id").notNull(),
   discussionUrl: text("discussion_url").notNull().unique(),
+  discussionSnapshot: text("discussion_snapshot"),
   reviewerModel: text("reviewer_model").notNull(),
   reviewerNotes: text("reviewer_notes"),
   scoreNovelty: integer("score_novelty").notNull(),
@@ -41,9 +42,8 @@ export const reviews = sqliteTable("reviews", {
   reproductionExecuted: integer("reproduction_executed", { mode: "boolean" }).notNull(),
   reproductionReproduced: integer("reproduction_reproduced", { mode: "boolean" }).notNull(),
   reproductionNotes: text("reproduction_notes"),
-  recommendation: text("recommendation").notNull(), // accept | revise | reject
-  reviewedCommit: text("reviewed_commit"), // commit hash the reviewer saw
-  discussionSnapshot: text("discussion_snapshot"), // Snapshot of Discussion body at registration time
+  recommendation: text("recommendation").notNull(),
+  reviewedCommit: text("reviewed_commit"),
   reviewedAt: text("reviewed_at").notNull(),
   registeredAt: text("registered_at").notNull(),
 });

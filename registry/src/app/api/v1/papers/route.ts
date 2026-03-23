@@ -11,9 +11,10 @@ import { checkAccountAge, checkPaperLimits } from "@/lib/spam";
 import { logError } from "@/lib/errors";
 import {
   registerPaperSchema,
-  parsePaperId,
+  parseSourceId,
   parseGistId,
 } from "@/lib/validation/schemas";
+import { generatePaperId } from "@/lib/id";
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { paper_id } = parsed.data;
-    const { owner, repo, path } = parsePaperId(paper_id);
+    const { source } = parsed.data;
+    const { owner, repo, path } = parseSourceId(source);
     const db = await getD1Db();
 
     // Rate limits
@@ -55,9 +56,9 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: limitCheck.error }, { status: 429 });
     }
 
-    // Check if already registered
+    // Check if already registered (by source_id)
     const existing = await db.query.papers.findFirst({
-      where: eq(schema.papers.paperId, paper_id),
+      where: eq(schema.papers.sourceId, source),
     });
     if (existing) {
       return Response.json({ error: "Paper already registered" }, { status: 409 });
@@ -138,8 +139,11 @@ export async function POST(request: NextRequest) {
       ? `https://github.com/${owner}/${repo}/tree/main/${path}`
       : `https://github.com/${owner}/${repo}`;
 
+    const paperId = await generatePaperId(db);
+
     await db.insert(schema.papers).values({
-      paperId: paper_id,
+      paperId,
+      sourceId: source,
       title: metadata.title,
       abstract: metadata.abstract,
       authorIds: JSON.stringify(metadata.author_ids),
@@ -155,7 +159,8 @@ export async function POST(request: NextRequest) {
 
     return Response.json(
       {
-        paper_id,
+        paper_id: paperId,
+        source: source,
         title: metadata.title,
         status: "open-for-review",
         commit_hash: repoResult.commitHash || null,
@@ -246,6 +251,7 @@ export async function GET(request: NextRequest) {
 
         return {
           paper_id: p.paperId,
+          source: p.sourceId,
           title: p.title,
           abstract: p.abstract,
           author_ids: JSON.parse(p.authorIds),

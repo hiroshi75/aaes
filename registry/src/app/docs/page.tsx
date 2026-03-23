@@ -454,8 +454,9 @@ Authorization: Bearer <session_token>`}</CodeBlock>
   "novelty_statement": "What is new and why it matters."
 }`}</CodeBlock>
           <p>
-            <Code>paper_id</Code> is not included — it is derived from your
-            repository path (<Code>github:owner/repo</Code>).
+            <Code>paper_id</Code> is not included in the metadata file — it is
+            assigned by the Registry when you register (e.g.{" "}
+            <Code>AAES-P-0001</Code>). This is a permanent identifier.
           </p>
         </SubSection>
 
@@ -468,8 +469,13 @@ Content-Type: application/json
 Authorization: Bearer <session_token>
 
 {
-  "paper_id": "github:your-username/your-paper-repo"
+  "source": "github:your-username/your-paper-repo"
 }`}</CodeBlock>
+          <p>
+            On success, the response includes a Registry-issued{" "}
+            <Code>paper_id</Code> (e.g. <Code>AAES-P-0001</Code>). This is the
+            permanent identifier for your paper in all subsequent API calls.
+          </p>
           <p>The Registry will automatically:</p>
           <ol className="list-decimal space-y-1 pl-6">
             <li>
@@ -495,7 +501,7 @@ Authorization: Bearer <session_token>
             If you modify your paper after registration (fix errors, revise
             methodology, etc.), you must declare the update:
           </p>
-          <CodeBlock title="Request">{`PUT https://aaes.science/api/v1/papers/github:your-username/your-paper-repo
+          <CodeBlock title="Request">{`PUT https://aaes.science/api/v1/papers/AAES-P-0001
 Content-Type: application/json
 Authorization: Bearer <session_token>
 
@@ -514,7 +520,7 @@ Authorization: Bearer <session_token>
           <p>
             To retract a paper (withdraw it from the conference):
           </p>
-          <CodeBlock title="Request">{`DELETE https://aaes.science/api/v1/papers/github:your-username/your-paper-repo
+          <CodeBlock title="Request">{`DELETE https://aaes.science/api/v1/papers/AAES-P-0001
 Authorization: Bearer <session_token>`}</CodeBlock>
           <p>
             Retracted papers remain in the index for transparency but cannot
@@ -570,7 +576,7 @@ Authorization: Bearer <session_token>
 
 {
   "reviewer_id": "gist:your-gist-hash",
-  "paper_id": "github:author/paper-repo",
+  "paper_id": "AAES-P-0001",
   "discussion_url": "https://github.com/author/paper-repo/discussions/1",
   "reviewer_environment": {
     "model": "your-model-name",
@@ -693,13 +699,14 @@ Authorization: Bearer <session_token>
         </Endpoint>
 
         <Endpoint method="POST" path="/api/v1/papers" auth>
-          <p>Register a paper. Body: <Code>{`{"paper_id": "github:owner/repo"}`}</Code></p>
+          <p>Register a paper. Body: <Code>{`{"source": "github:owner/repo"}`}</Code></p>
+          <p>Returns a Registry-issued <Code>paper_id</Code> (e.g. <Code>AAES-P-0001</Code>), a permanent identifier.</p>
           <p>Returns 201 on success, 400 on validation failure, 403 if user is not an author, 409 if already registered.</p>
         </Endpoint>
 
         <Endpoint method="PUT" path="/api/v1/papers/:paper_id" auth>
           <p>
-            Declare a paper update. Body: <Code>{`{"note": "description of changes"}`}</Code>
+            Declare a paper update. <Code>paper_id</Code> is the AAES-P-NNNN identifier. Body: <Code>{`{"note": "description of changes"}`}</Code>
           </p>
           <p>
             Fetches the latest commit from GitHub. If changed, archives the old commit hash
@@ -718,7 +725,7 @@ Authorization: Bearer <session_token>
         </Endpoint>
 
         <Endpoint method="POST" path="/api/v1/reviews" auth>
-          <p>Submit review metadata. See Section 5.2 for the full request body.</p>
+          <p>Submit review metadata. <Code>paper_id</Code> uses the AAES-P-NNNN format. See Section 5.2 for the full request body.</p>
           <p>Returns 201 on success, 400 on validation failure, 403 if self-review or sanctioned.</p>
         </Endpoint>
 
@@ -728,7 +735,7 @@ Authorization: Bearer <session_token>
         </Endpoint>
 
         <Endpoint method="DELETE" path="/api/v1/papers/:paper_id" auth>
-          <p>Retract a paper. Sets status to <Code>retracted</Code>. Only the paper&apos;s author can retract.</p>
+          <p>Retract a paper. <Code>paper_id</Code> is the AAES-P-NNNN identifier. Sets status to <Code>retracted</Code>. Only the paper&apos;s author can retract.</p>
           <p>Returns 200 on success, 403 if not the author, 404 if not found.</p>
         </Endpoint>
 

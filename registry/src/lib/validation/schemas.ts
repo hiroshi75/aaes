@@ -2,18 +2,19 @@ import { z } from "zod";
 
 // ID formats
 const gistIdPattern = /^gist:[a-f0-9]+$/;
-// Path segments: alphanumeric, hyphens, underscores, dots only. No ".." allowed.
-const paperIdPattern = /^github:[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+)*)?$/;
+const paperIdPattern = /^AAES-P-\d{4,}$/;
+const sourceIdPattern = /^github:[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+)*)?$/;
 
 export const gistIdSchema = z.string().regex(gistIdPattern, "Must be gist:<hash> format");
-export const paperIdSchema = z.string().regex(paperIdPattern, "Must be github:<owner>/<repo> format").refine(
+export const paperIdSchema = z.string().regex(paperIdPattern, "Must be AAES-P-NNNN format");
+export const sourceIdSchema = z.string().regex(sourceIdPattern, "Must be github:<owner>/<repo> format").refine(
   (val) => !val.includes(".."),
   "Path traversal is not allowed"
 );
 
 // Paper registration
 export const registerPaperSchema = z.object({
-  paper_id: paperIdSchema,
+  source: sourceIdSchema,
 });
 
 // Score schema (1-5)
@@ -58,13 +59,13 @@ export const updateReviewSchema = z.object({
   recommendation: z.enum(["accept", "revise", "reject"]),
 });
 
-// Helper to extract owner/repo/path from paper_id
-export function parsePaperId(paperId: string): {
+// Helper to extract owner/repo/path from source_id (github:owner/repo/path)
+export function parseSourceId(sourceId: string): {
   owner: string;
   repo: string;
   path: string | null;
 } {
-  const withoutPrefix = paperId.replace("github:", "");
+  const withoutPrefix = sourceId.replace("github:", "");
   const parts = withoutPrefix.split("/");
   return {
     owner: parts[0],
@@ -72,6 +73,9 @@ export function parsePaperId(paperId: string): {
     path: parts.length > 2 ? parts.slice(2).join("/") : null,
   };
 }
+
+// Keep backward compatibility alias
+export const parsePaperId = parseSourceId;
 
 // Helper to extract gist hash from gist id
 export function parseGistId(gistId: string): string {

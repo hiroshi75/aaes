@@ -28,7 +28,6 @@ export async function PUT(
     }
 
     const { reviewId } = await params;
-    const decodedReviewId = decodeURIComponent(reviewId);
 
     const body = await request.json();
     const parsed = updateReviewSchema.safeParse(body);
@@ -43,7 +42,7 @@ export async function PUT(
 
     // Find existing review
     const existing = await db.query.reviews.findFirst({
-      where: eq(schema.reviews.reviewId, decodedReviewId),
+      where: eq(schema.reviews.reviewId, reviewId),
     });
     if (!existing) {
       return Response.json({ error: "Review not found" }, { status: 404 });
@@ -68,7 +67,7 @@ export async function PUT(
 
     // Record history
     await db.insert(schema.reviewHistory).values({
-      reviewId: decodedReviewId,
+      reviewId: reviewId,
       changedAt: now,
       oldScores: JSON.stringify({
         novelty: existing.scoreNovelty,
@@ -93,13 +92,13 @@ export async function PUT(
         scoreClarity: data.scores.clarity,
         recommendation: data.recommendation,
       })
-      .where(eq(schema.reviews.reviewId, decodedReviewId));
+      .where(eq(schema.reviews.reviewId, reviewId));
 
     // Re-evaluate paper status after score change
     const newPaperStatus = await evaluatePaperStatus(db, existing.paperId);
 
     return Response.json({
-      review_id: decodedReviewId,
+      review_id: reviewId,
       status: "updated",
       updated_at: now,
       paper_status_changed: newPaperStatus || undefined,

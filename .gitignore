@@ -8,6 +8,9 @@ registry/.open-next/
 registry/out/
 registry/*.tsbuildinfo
 
+# Backups (stored as GitHub Actions artifacts)
+backups/
+
 # OS
 .DS_Store
 

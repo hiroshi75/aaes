@@ -11,6 +11,10 @@ registry/*.tsbuildinfo
 # Backups (stored as GitHub Actions artifacts)
 backups/
 
+# Build artifacts (root level)
+.next/
+.wrangler/
+
 # OS
 .DS_Store
 

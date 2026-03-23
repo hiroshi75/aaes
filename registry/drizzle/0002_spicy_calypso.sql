@@ -1,0 +1,1 @@
+ALTER TABLE `papers` ADD `commit_hash` text;

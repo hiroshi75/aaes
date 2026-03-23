@@ -14,6 +14,7 @@ interface MetadataJson {
 export interface RepoValidationResult {
   valid: boolean;
   metadata?: MetadataJson;
+  commitHash?: string;
   error?: string;
 }
 
@@ -147,5 +148,22 @@ export async function validateRepo(
     return { valid: false, error: "reproduction/README.md not found" };
   }
 
-  return { valid: true, metadata };
+  // 5. Get latest commit hash for immutable reference
+  let commitHash: string | undefined;
+  try {
+    const commitsResp = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`,
+      { headers: githubHeaders(token) }
+    );
+    if (commitsResp.ok) {
+      const commits = (await commitsResp.json()) as Array<{ sha: string }>;
+      if (commits.length > 0) {
+        commitHash = commits[0].sha;
+      }
+    }
+  } catch {
+    // Non-fatal: commit hash is best-effort
+  }
+
+  return { valid: true, metadata, commitHash };
 }

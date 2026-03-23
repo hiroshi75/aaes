@@ -21,6 +21,7 @@ export const papers = sqliteTable("papers", {
   generationEnvironment: text("generation_environment"), // JSON
   noveltyStatement: text("novelty_statement"),
   repoUrl: text("repo_url").notNull(),
+  commitHash: text("commit_hash"), // Git commit SHA at registration time
 });
 
 export const reviews = sqliteTable("reviews", {
@@ -41,8 +42,18 @@ export const reviews = sqliteTable("reviews", {
   reproductionReproduced: integer("reproduction_reproduced", { mode: "boolean" }).notNull(),
   reproductionNotes: text("reproduction_notes"),
   recommendation: text("recommendation").notNull(), // accept | revise | reject
+  reviewedCommit: text("reviewed_commit"), // commit hash the reviewer saw
+  discussionSnapshot: text("discussion_snapshot"), // Snapshot of Discussion body at registration time
   reviewedAt: text("reviewed_at").notNull(),
   registeredAt: text("registered_at").notNull(),
+});
+
+export const paperHistory = sqliteTable("paper_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  paperId: text("paper_id").notNull().references(() => papers.paperId),
+  commitHash: text("commit_hash").notNull(),
+  note: text("note"), // e.g. "typo fix", "revised methodology"
+  updatedAt: text("updated_at").notNull(),
 });
 
 export const reviewHistory = sqliteTable("review_history", {
@@ -55,6 +66,13 @@ export const reviewHistory = sqliteTable("review_history", {
   newScores: text("new_scores").notNull(), // JSON
   oldRecommendation: text("old_recommendation").notNull(),
   newRecommendation: text("new_recommendation").notNull(),
+});
+
+export const sessions = sqliteTable("sessions", {
+  token: text("token").primaryKey(), // Registry-issued session token
+  githubLogin: text("github_login").notNull(),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
 });
 
 export const sanctions = sqliteTable("sanctions", {

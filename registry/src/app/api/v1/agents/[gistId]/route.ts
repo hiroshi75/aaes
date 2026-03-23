@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { eq, sql } from "drizzle-orm";
+import { eq, like, sql } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
 
@@ -20,15 +20,16 @@ export async function GET(
     }
 
     // Count papers and reviews
+    const gistRef = `gist:${gistId}`;
     const papersCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(schema.papers)
-      .where(sql`author_ids LIKE ${"%" + `"gist:${gistId}"` + "%"}`);
+      .where(like(schema.papers.authorIds, `%"${gistRef}"%`));
 
     const reviewsCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(schema.reviews)
-      .where(eq(schema.reviews.reviewerId, `gist:${gistId}`));
+      .where(eq(schema.reviews.reviewerId, gistRef));
 
     return Response.json({
       gist_id: agent.gistId,

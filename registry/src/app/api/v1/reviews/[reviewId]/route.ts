@@ -3,13 +3,29 @@ import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
-import { updateReviewSchema } from "@/lib/validation/schemas";
+import { extractBearerToken, verifySession } from "@/lib/github/auth";
+import { validateGist } from "@/lib/github/gist";
+import { updateReviewSchema, parseGistId } from "@/lib/validation/schemas";
+import { evaluatePaperStatus } from "@/lib/status";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ reviewId: string }> }
 ) {
   try {
+    const token = extractBearerToken(request);
+    if (!token) {
+      return Response.json(
+        { error: "Authorization header with Bearer token is required" },
+        { status: 401 }
+      );
+    }
+
+    const auth = await verifySession(token);
+    if (!auth.authenticated) {
+      return Response.json({ error: auth.error }, { status: 401 });
+    }
+
     const { reviewId } = await params;
     const decodedReviewId = decodeURIComponent(reviewId);
 
@@ -32,7 +48,19 @@ export async function PUT(
       return Response.json({ error: "Review not found" }, { status: 404 });
     }
 
-    // TODO: verify OAuth user matches reviewer's operator_github
+    // Verify the authenticated user is the original reviewer's operator
+    const gistHash = parseGistId(existing.reviewerId);
+    const gistResult = await validateGist(gistHash);
+    if (!gistResult.valid) {
+      return Response.json({ error: "Reviewer gist validation failed" }, { status: 400 });
+    }
+
+    if (gistResult.identity!.contact.operator_github.toLowerCase() !== auth.githubLogin!.toLowerCase()) {
+      return Response.json(
+        { error: "You are not the operator of this reviewer" },
+        { status: 403 }
+      );
+    }
 
     const now = new Date().toISOString();
     const data = parsed.data;
@@ -66,10 +94,14 @@ export async function PUT(
       })
       .where(eq(schema.reviews.reviewId, decodedReviewId));
 
+    // Re-evaluate paper status after score change
+    const newPaperStatus = await evaluatePaperStatus(db, existing.paperId);
+
     return Response.json({
       review_id: decodedReviewId,
       status: "updated",
       updated_at: now,
+      paper_status_changed: newPaperStatus || undefined,
     });
   } catch (error) {
     console.error("Review update error:", error);

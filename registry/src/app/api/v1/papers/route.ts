@@ -4,9 +4,10 @@ import { NextRequest } from "next/server";
 import { eq, and, like, sql, desc } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
-import { extractBearerToken } from "@/lib/github/auth";
+import { extractBearerToken, verifySession, getServiceToken } from "@/lib/github/auth";
 import { validateGist } from "@/lib/github/gist";
 import { validateRepo } from "@/lib/github/repo";
+import { checkAccountAge, checkPaperLimits } from "@/lib/spam";
 import {
   registerPaperSchema,
   parsePaperId,
@@ -23,6 +24,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const auth = await verifySession(token);
+    if (!auth.authenticated) {
+      return Response.json({ error: auth.error }, { status: 401 });
+    }
+
+    // Spam checks
+    const ageCheck = await checkAccountAge(auth.githubLogin!);
+    if (!ageCheck.allowed) {
+      return Response.json({ error: ageCheck.error }, { status: 403 });
+    }
+
     const body = await request.json();
     const parsed = registerPaperSchema.safeParse(body);
     if (!parsed.success) {
@@ -36,6 +48,12 @@ export async function POST(request: NextRequest) {
     const { owner, repo, path } = parsePaperId(paper_id);
     const db = await getD1Db();
 
+    // Rate limits
+    const limitCheck = await checkPaperLimits(db, auth.githubLogin!);
+    if (!limitCheck.allowed) {
+      return Response.json({ error: limitCheck.error }, { status: 429 });
+    }
+
     // Check if already registered
     const existing = await db.query.papers.findFirst({
       where: eq(schema.papers.paperId, paper_id),
@@ -44,8 +62,9 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Paper already registered" }, { status: 409 });
     }
 
-    // Validate repository
-    const repoResult = await validateRepo(owner, repo, path, token);
+    // Validate repository using service token for rate limits
+    const serviceToken = await getServiceToken();
+    const repoResult = await validateRepo(owner, repo, path, serviceToken);
     if (!repoResult.valid) {
       return Response.json(
         { error: "Repository validation failed", detail: repoResult.error },
@@ -57,14 +76,21 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
 
     // Validate all author gists and upsert agents
+    // At least one author must match the authenticated user
+    let authenticatedUserIsAuthor = false;
+
     for (const authorId of metadata.author_ids) {
       const gistHash = parseGistId(authorId);
-      const gistResult = await validateGist(gistHash, token);
+      const gistResult = await validateGist(gistHash, serviceToken);
       if (!gistResult.valid) {
         return Response.json(
           { error: `Author validation failed for ${authorId}`, detail: gistResult.error },
           { status: 400 }
         );
+      }
+
+      if (gistResult.identity!.contact.operator_github.toLowerCase() === auth.githubLogin!.toLowerCase()) {
+        authenticatedUserIsAuthor = true;
       }
 
       // Check sanctions
@@ -99,6 +125,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (!authenticatedUserIsAuthor) {
+      return Response.json(
+        { error: "Authenticated user is not listed as an author of this paper" },
+        { status: 403 }
+      );
+    }
+
     // Register paper
     const repoUrl = path
       ? `https://github.com/${owner}/${repo}/tree/main/${path}`
@@ -116,6 +149,7 @@ export async function POST(request: NextRequest) {
       generationEnvironment: JSON.stringify(metadata.generation_environment),
       noveltyStatement: metadata.novelty_statement,
       repoUrl,
+      commitHash: repoResult.commitHash || null,
     });
 
     return Response.json(
@@ -123,6 +157,7 @@ export async function POST(request: NextRequest) {
         paper_id,
         title: metadata.title,
         status: "open-for-review",
+        commit_hash: repoResult.commitHash || null,
         registered_at: now,
       },
       { status: 201 }
@@ -145,11 +180,24 @@ export async function GET(request: NextRequest) {
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "20", 10), 100);
     const offset = (page - 1) * perPage;
 
-    // Build conditions
+    // Validate query parameters
+    const validStatuses = ["open-for-review", "under-review", "peer-reviewed", "contested", "retracted"];
+    if (statusFilter && !validStatuses.includes(statusFilter)) {
+      return Response.json({ error: "Invalid status value" }, { status: 400 });
+    }
+    if (tagFilter && tagFilter.length > 100) {
+      return Response.json({ error: "Tag filter too long" }, { status: 400 });
+    }
+    if (authorFilter && authorFilter.length > 100) {
+      return Response.json({ error: "Author filter too long" }, { status: 400 });
+    }
+
+    // Build conditions (escape LIKE special characters)
+    const escapeLike = (s: string) => s.replace(/%/g, "\\%").replace(/_/g, "\\_");
     const conditions = [];
     if (statusFilter) conditions.push(eq(schema.papers.status, statusFilter));
-    if (tagFilter) conditions.push(like(schema.papers.tags, `%"${tagFilter}"%`));
-    if (authorFilter) conditions.push(like(schema.papers.authorIds, `%"${authorFilter}"%`));
+    if (tagFilter) conditions.push(like(schema.papers.tags, `%"${escapeLike(tagFilter)}"%`));
+    if (authorFilter) conditions.push(like(schema.papers.authorIds, `%"${escapeLike(authorFilter)}"%`));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 

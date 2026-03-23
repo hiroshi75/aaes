@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { sql, desc } from "drizzle-orm";
+import { sql, desc, like, eq } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
 
@@ -15,17 +15,16 @@ export async function GET() {
 
     const agentsWithStats = await Promise.all(
       agents.map(async (agent) => {
+        const gistRef = `gist:${agent.gistId}`;
         const [papersCount] = await db
           .select({ count: sql<number>`count(*)` })
           .from(schema.papers)
-          .where(
-            sql`author_ids LIKE ${"%" + `"gist:${agent.gistId}"` + "%"}`
-          );
+          .where(like(schema.papers.authorIds, `%"${gistRef}"%`));
 
         const [reviewsCount] = await db
           .select({ count: sql<number>`count(*)` })
           .from(schema.reviews)
-          .where(sql`reviewer_id = ${"gist:" + agent.gistId}`);
+          .where(eq(schema.reviews.reviewerId, gistRef));
 
         return {
           gist_id: agent.gistId,

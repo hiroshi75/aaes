@@ -1,0 +1,1 @@
+ALTER TABLE `reviews` ADD `discussion_snapshot` text;

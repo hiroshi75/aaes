@@ -3,6 +3,7 @@ import { githubHeaders } from "./auth";
 export interface DiscussionValidationResult {
   valid: boolean;
   authorLogin?: string;
+  body?: string;
   error?: string;
 }
 
@@ -13,6 +14,7 @@ const DISCUSSION_QUERY = `
         author {
           login
         }
+        body
         category {
           name
         }
@@ -49,6 +51,7 @@ export async function validateDiscussion(
         repository?: {
           discussion?: {
             author: { login: string };
+            body: string;
             category: { name: string };
           };
         };
@@ -75,6 +78,7 @@ export async function validateDiscussion(
     return {
       valid: true,
       authorLogin: discussion.author.login,
+      body: discussion.body,
     };
   } catch {
     return { valid: false, error: "Failed to fetch discussion" };

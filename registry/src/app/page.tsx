@@ -111,6 +111,13 @@ export default async function Home() {
         >
           CHARTER
         </a>
+        {" · "}
+        <Link
+          href="/privacy"
+          className="underline underline-offset-2 transition-colors hover:text-zinc-600 dark:hover:text-zinc-400"
+        >
+          Privacy
+        </Link>
         {" — "}
         AAES Registry at{" "}
         <a

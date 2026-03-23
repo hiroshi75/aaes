@@ -3,9 +3,11 @@ import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
-import { extractBearerToken } from "@/lib/github/auth";
+import { extractBearerToken, verifySession, getServiceToken } from "@/lib/github/auth";
+import { evaluatePaperStatus } from "@/lib/status";
 import { validateGist } from "@/lib/github/gist";
 import { validateDiscussion } from "@/lib/github/discussion";
+import { checkAccountAge, checkReviewLimits } from "@/lib/spam";
 import {
   registerReviewSchema,
   parsePaperId,
@@ -23,6 +25,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const auth = await verifySession(token);
+    if (!auth.authenticated) {
+      return Response.json({ error: auth.error }, { status: 401 });
+    }
+
+    // Account age check
+    const ageCheck = await checkAccountAge(auth.githubLogin!);
+    if (!ageCheck.allowed) {
+      return Response.json({ error: ageCheck.error }, { status: 403 });
+    }
+
     const body = await request.json();
     const parsed = registerReviewSchema.safeParse(body);
     if (!parsed.success) {
@@ -34,6 +47,12 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
     const db = await getD1Db();
+
+    // Review rate limits
+    const limitCheck = await checkReviewLimits(db, auth.githubLogin!, data.paper_id, data.reviewer_id);
+    if (!limitCheck.allowed) {
+      return Response.json({ error: limitCheck.error }, { status: 429 });
+    }
 
     // Check paper exists
     const paper = await db.query.papers.findFirst({
@@ -58,12 +77,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate reviewer gist
+    const serviceToken = await getServiceToken();
     const gistHash = parseGistId(data.reviewer_id);
-    const gistResult = await validateGist(gistHash, token);
+    const gistResult = await validateGist(gistHash, serviceToken);
     if (!gistResult.valid) {
       return Response.json(
         { error: "Reviewer validation failed", detail: gistResult.error },
         { status: 400 }
+      );
+    }
+
+    // Verify authenticated user is the reviewer's operator
+    if (gistResult.identity!.contact.operator_github.toLowerCase() !== auth.githubLogin!.toLowerCase()) {
+      return Response.json(
+        { error: "Authenticated user does not match reviewer's operator_github" },
+        { status: 403 }
       );
     }
 
@@ -104,7 +132,7 @@ export async function POST(request: NextRequest) {
       discOwner,
       discRepo,
       discNumber,
-      token,
+      serviceToken,
     );
     if (!discResult.valid) {
       return Response.json(
@@ -124,6 +152,17 @@ export async function POST(request: NextRequest) {
             "Discussion author does not match reviewer's operator_github",
         },
         { status: 403 }
+      );
+    }
+
+    // Minimum review length check
+    const MIN_REVIEW_LENGTH = 200;
+    if (!discResult.body || discResult.body.trim().length < MIN_REVIEW_LENGTH) {
+      return Response.json(
+        {
+          error: `Review Discussion must be at least ${MIN_REVIEW_LENGTH} characters (got ${discResult.body?.trim().length || 0})`,
+        },
+        { status: 400 }
       );
     }
 
@@ -167,15 +206,21 @@ export async function POST(request: NextRequest) {
       reproductionReproduced: data.reproduction_result.reproduced,
       reproductionNotes: data.reproduction_result.notes || null,
       recommendation: data.recommendation,
+      reviewedCommit: paper.commitHash || null,
+      discussionSnapshot: discResult.body || null,
       reviewedAt: now,
       registeredAt: now,
     });
+
+    // Evaluate paper status transition
+    const newPaperStatus = await evaluatePaperStatus(db, data.paper_id);
 
     return Response.json(
       {
         review_id: reviewId,
         paper_id: data.paper_id,
         status: "registered",
+        paper_status_changed: newPaperStatus || undefined,
       },
       { status: 201 }
     );

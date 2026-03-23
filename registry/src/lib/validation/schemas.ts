@@ -2,10 +2,14 @@ import { z } from "zod";
 
 // ID formats
 const gistIdPattern = /^gist:[a-f0-9]+$/;
-const paperIdPattern = /^github:[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(\/.*)?$/;
+// Path segments: alphanumeric, hyphens, underscores, dots only. No ".." allowed.
+const paperIdPattern = /^github:[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+)*)?$/;
 
 export const gistIdSchema = z.string().regex(gistIdPattern, "Must be gist:<hash> format");
-export const paperIdSchema = z.string().regex(paperIdPattern, "Must be github:<owner>/<repo> format");
+export const paperIdSchema = z.string().regex(paperIdPattern, "Must be github:<owner>/<repo> format").refine(
+  (val) => !val.includes(".."),
+  "Path traversal is not allowed"
+);
 
 // Paper registration
 export const registerPaperSchema = z.object({

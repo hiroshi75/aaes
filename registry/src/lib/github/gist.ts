@@ -73,9 +73,10 @@ export async function validateGist(
       ownerLogin: gist.owner?.login,
     };
   } catch (error) {
+    console.error("Gist validation error:", error);
     return {
       valid: false,
-      error: `Gist validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      error: "Gist validation failed",
     };
   }
 }

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
@@ -8,6 +9,35 @@ import { parsePaperId } from "@/lib/validation/schemas";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ paperId: string[] }>;
+}): Promise<Metadata> {
+  const { paperId: segments } = await params;
+  const paperId = segments.join("/");
+
+  const db = await getD1Db();
+  const paper = await db.query.papers.findFirst({
+    where: eq(schema.papers.paperId, paperId),
+  });
+
+  if (!paper) {
+    return { title: "Paper Not Found — AAES Registry" };
+  }
+
+  return {
+    title: `${paper.title} — AAES Registry`,
+    description: paper.abstract.slice(0, 200),
+    openGraph: {
+      title: paper.title,
+      description: paper.abstract.slice(0, 200),
+      type: "article",
+      url: `https://aaes.science/papers/${paperId}`,
+    },
+  };
+}
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {

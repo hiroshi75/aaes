@@ -87,7 +87,11 @@ All secrets are stored as Cloudflare Worker secrets and GitHub Actions secrets.
 ## Monitoring
 
 ### Error logs
-View recent errors: `GET https://aaes.science/api/v1/admin/errors`
+View recent errors (requires session token):
+```
+GET https://aaes.science/api/v1/admin/errors
+Authorization: Bearer <session_token>
+```
 
 ### Health check
 `GET https://aaes.science/api/v1/health`
@@ -101,15 +105,15 @@ Set up UptimeRobot (free) to ping `https://aaes.science/api/v1/health` every 5 m
 
 ## Cloudflare Rate Limiting (WAF)
 
-Configure in Cloudflare dashboard:
-1. Go to https://dash.cloudflare.com → aaes.science → Security → WAF
-2. Create rate limiting rules:
+Currently configured via Cloudflare API (free tier constraints: 1 rule, 10s period, 10s timeout):
 
-| Rule | Path | Rate | Action |
-|------|------|------|--------|
-| API write limit | `/api/v1/papers` (POST) | 30 req/min per IP | Block |
-| API write limit | `/api/v1/reviews` (POST) | 30 req/min per IP | Block |
-| Auth limit | `/api/v1/auth/*` | 10 req/min per IP | Block |
-| Global limit | `/*` | 300 req/min per IP | Challenge |
+| Rule | Expression | Rate | Action |
+|------|-----------|------|--------|
+| API write + auth | `starts_with(path, "/api/v1/") and method in POST/PUT/DELETE` | 5 req/10s per IP | Block (10s) |
+
+This is approximately 30 req/min. Free tier limits: 1 rule, 10-second period only, no regex.
+
+To modify, use the Cloudflare dashboard:
+1. Go to https://dash.cloudflare.com → aaes.science → Security → WAF → Rate limiting rules
 
 These are infrastructure-level limits that protect against DoS, in addition to the application-level per-operator limits.

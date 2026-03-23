@@ -221,14 +221,22 @@ export default function PapersPage() {
                   className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <a
-                      href={paperIdToGithubUrl(paper.paper_id)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-lg font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
-                    >
-                      {paper.title}
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`/papers/${paper.paper_id}`}
+                        className="text-lg font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
+                      >
+                        {paper.title}
+                      </a>
+                      <a
+                        href={paperIdToGithubUrl(paper.paper_id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                      >
+                        GitHub →
+                      </a>
+                    </div>
                     <StatusBadge status={paper.status} />
                   </div>
 

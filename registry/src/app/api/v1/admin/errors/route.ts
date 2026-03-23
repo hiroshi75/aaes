@@ -3,9 +3,19 @@ export const dynamic = "force-dynamic";
 import { desc } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
+import { extractBearerToken, verifySession } from "@/lib/github/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const token = extractBearerToken(request);
+    if (!token) {
+      return Response.json({ error: "Authentication required" }, { status: 401 });
+    }
+    const auth = await verifySession(token);
+    if (!auth.authenticated) {
+      return Response.json({ error: auth.error }, { status: 401 });
+    }
+
     const db = await getD1Db();
     const errors = await db
       .select()

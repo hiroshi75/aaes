@@ -118,10 +118,16 @@ export async function PUT(
       });
     }
 
-    // Update paper's commit hash
+    // Update paper's commit hash (and un-retract if retracted)
+    const wasRetracted = paper.status === "retracted";
+    const updateFields: Record<string, string> = { commitHash: latestCommit };
+    if (wasRetracted) {
+      updateFields.status = "open-for-review";
+    }
+
     await db
       .update(schema.papers)
-      .set({ commitHash: latestCommit })
+      .set(updateFields)
       .where(eq(schema.papers.paperId, paperId));
 
     return Response.json({
@@ -130,6 +136,7 @@ export async function PUT(
       new_commit: latestCommit,
       note,
       updated_at: now,
+      ...(wasRetracted ? { status_changed: "open-for-review", message: "Paper un-retracted and reopened for review" } : {}),
     });
   } catch (error) {
     console.error("Paper update error:", error);

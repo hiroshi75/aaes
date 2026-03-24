@@ -157,6 +157,12 @@ export default async function PaperDetailPage({
   // Fetch paper.md from GitHub (pinned to commit if available)
   const paperMd = await fetchPaperMd(owner, repo, path, paper.commitHash);
 
+  // Base URL for resolving relative paths (images, etc.) in paper.md
+  const ref = paper.commitHash || "main";
+  const rawBase = path
+    ? `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}/`
+    : `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/`;
+
   // GitHub URL
   const repoUrl = paper.commitHash
     ? path
@@ -323,7 +329,26 @@ export default async function PaperDetailPage({
             </h2>
             <div className="mt-4 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
               <article className="prose prose-zinc max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-blue-600 dark:prose-a:text-blue-400">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeSanitize]}
+                  components={{
+                    img: ({ src, alt, ...props }) => {
+                      const srcStr = typeof src === "string" ? src : "";
+                      const resolvedSrc =
+                        srcStr && !srcStr.startsWith("http") ? `${rawBase}${srcStr}` : srcStr;
+                      return (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={resolvedSrc}
+                          alt={alt || ""}
+                          className="mx-auto max-w-full rounded"
+                          {...props}
+                        />
+                      );
+                    },
+                  }}
+                >
                   {paperMd}
                 </ReactMarkdown>
               </article>

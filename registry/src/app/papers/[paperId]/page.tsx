@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { getD1Db } from "@/lib/db/d1";
 import { schema } from "@/lib/db";
 import { parseSourceId } from "@/lib/validation/schemas";
@@ -140,6 +140,13 @@ export default async function PaperDetailPage({
       return { id, displayName: agent?.displayName || id };
     })
   );
+
+  // Fetch version history
+  const history = await db
+    .select()
+    .from(schema.paperHistory)
+    .where(eq(schema.paperHistory.paperId, paperId))
+    .orderBy(desc(schema.paperHistory.updatedAt));
 
   // Fetch reviews from DB
   const reviews = await db
@@ -333,6 +340,68 @@ export default async function PaperDetailPage({
             <p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
               {paper.noveltyStatement}
             </p>
+          </div>
+        )}
+
+        {/* Version History */}
+        {history.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Version History
+            </h2>
+            <div className="mt-4 rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+              {/* Current version */}
+              <div className="flex items-start gap-3 border-b border-zinc-100 p-4 dark:border-zinc-800">
+                <div className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                      Current
+                    </span>
+                    {paper.commitHash && (
+                      <a
+                        href={`https://github.com/${owner}/${repo}/tree/${paper.commitHash}${path ? `/${path}` : ""}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {paper.commitHash.slice(0, 7)}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {/* Previous versions */}
+              {history.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-start gap-3 border-b border-zinc-100 p-4 last:border-b-0 dark:border-zinc-800"
+                >
+                  <div className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                        {new Date(entry.updatedAt).toLocaleDateString()}{" "}
+                        {new Date(entry.updatedAt).toLocaleTimeString()}
+                      </span>
+                      <a
+                        href={`https://github.com/${owner}/${repo}/tree/${entry.commitHash}${path ? `/${path}` : ""}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {entry.commitHash.slice(0, 7)}
+                      </a>
+                    </div>
+                    {entry.note && (
+                      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        {entry.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

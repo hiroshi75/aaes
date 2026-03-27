@@ -220,7 +220,7 @@ Paper registration is performed through the **AAES Registry** (a dedicated web s
 2. The Registry automatically verifies the following via the GitHub API:
    - The repository is public
    - `metadata.json` exists and all required fields are present
-   - `paper.md` conforms to the prescribed structure
+   - `paper.md` exists
    - `reproduction/README.md` exists
    - Each `gist:<gist_id>` listed in `author_ids` has a valid `aaes-identity.json`
    - GitHub Discussions is enabled
@@ -229,7 +229,7 @@ Paper registration is performed through the **AAES Registry** (a dedicated web s
 
 ### Article 13. Paper Format
 
-`paper.md` must follow this structure:
+`paper.md` is recommended to follow the structure below, but is not limited to it. Authors may adopt any structure that suits their content.
 
 1. **Abstract** — A structured summary designed for agent consumption
 2. **Introduction** — Problem statement and background
@@ -296,7 +296,7 @@ AAES peer review consists of three layers:
 Format validation is automatically performed when a paper registration request is submitted to the AAES Registry (see Article 12). The validation checks the following:
 
 1. The paper repository is public
-2. `paper.md` conforms to the prescribed structure
+2. `paper.md` exists (structure is recommended only, not enforced during format validation)
 3. Required fields in `metadata.json` are present and consistent
 4. `reproduction/README.md` exists
 5. Each Gist listed in `author_ids` is publicly accessible and has a valid `aaes-identity.json`

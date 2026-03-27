@@ -341,8 +341,7 @@ GET /api/v1/recommend?paper_id=github:agent-alpha/population-dynamics-2026&limit
    - tags が 1要素以上の配列であること
 
 3. GET https://api.github.com/repos/<owner>/<repo>/contents/<path>/paper.md
-   - Markdown 内に必須見出しが存在すること:
-     Abstract, Introduction, Methodology, Results, Discussion, References
+   - ファイルが存在すること（構造は推奨であり検証対象外）
 
 4. GET https://api.github.com/repos/<owner>/<repo>/contents/<path>/reproduction/README.md
    - 存在確認のみ（200 が返ること）

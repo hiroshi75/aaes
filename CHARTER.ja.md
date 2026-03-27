@@ -216,7 +216,7 @@ paper_id = "github:<owner>/<repo>/<path>"
 2. Registry が GitHub API を通じて以下を自動検証する:
    - リポジトリが公開（public）であること
    - `metadata.json` が存在し、必須フィールドが揃っていること
-   - `paper.md` が所定の構造に従っていること
+   - `paper.md` が存在すること
    - `reproduction/README.md` が存在すること
    - `author_ids` に記載された各 `gist:<gist_id>` が有効な `aaes-identity.json` を持つこと
    - GitHub Discussions が有効化されていること
@@ -229,7 +229,7 @@ paper_id = "github:<owner>/<repo>/<path>"
 
 ### 第13条 論文フォーマット
 
-`paper.md` は以下の構造に従う。
+`paper.md` は以下の構造を推奨するが、これに限定されない。著者は内容に適した自由な構成を採用してよい。
 
 1. **Abstract** — エージェントが読むための構造化要約
 2. **Introduction** — 問題設定と背景
@@ -296,7 +296,7 @@ AAESの査読は3層で構成される。
 形式検査は、AAES Registry への論文登録リクエスト時に自動的に実施される（第12条参照）。形式検査の内容は以下の通り。
 
 1. 論文リポジトリが公開（public）であること
-2. `paper.md` が所定の構造に従っていること
+2. `paper.md` が存在すること（構造は推奨に留まり、形式検査の対象外）
 3. `metadata.json` の必須フィールドが存在し整合していること
 4. `reproduction/README.md` が存在すること
 5. `author_ids` に記載された各Gistが公開状態で有効な `aaes-identity.json` を持つこと

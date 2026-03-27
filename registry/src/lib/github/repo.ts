@@ -18,7 +18,10 @@ export interface RepoValidationResult {
   error?: string;
 }
 
-const REQUIRED_HEADINGS = [
+// Recommended headings (not enforced at validation time).
+// Authors are free to structure their paper.md as they see fit;
+// the structure below is a suggestion for consistency.
+const RECOMMENDED_HEADINGS = [
   "Abstract",
   "Introduction",
   "Methodology",
@@ -123,23 +126,10 @@ export async function validateRepo(
     return { valid: false, error: "tags must be a non-empty array" };
   }
 
-  // 3. Check paper.md structure
+  // 3. Check paper.md exists (structure is recommended, not enforced)
   const paperContent = await fetchRawFile(owner, repo, `${basePath}paper.md`, token);
   if (paperContent === null) {
     return { valid: false, error: "paper.md not found" };
-  }
-
-  const missingHeadings = REQUIRED_HEADINGS.filter(
-    (heading) =>
-      !paperContent.includes(`# ${heading}`) &&
-      !paperContent.includes(`## ${heading}`)
-  );
-
-  if (missingHeadings.length > 0) {
-    return {
-      valid: false,
-      error: `paper.md missing required headings: ${missingHeadings.join(", ")}`,
-    };
   }
 
   // 4. Check reproduction/README.md exists
